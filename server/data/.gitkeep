@@ -1,0 +1,485 @@
+import express from 'express';
+import cors from 'cors';
+import sqlite3 from 'sqlite3';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { randomUUID } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+
+const app = express();
+const PORT = process.env.PORT || 4000;
+const JWT_SECRET = process.env.JWT_SECRET || 'cancer-research-demo-secret';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const dbPath = path.join(__dirname, '..', 'data', 'cancer-research.db');
+
+app.use(cors());
+app.use(express.json());
+
+const db = new sqlite3.Database(dbPath);
+
+const seedStudies = [
+  {
+    id: 'study-1',
+    cancerType: 'Breast Cancer',
+    stage: 'Metastatic',
+    biomarker: 'HER2-positive',
+    therapy: 'Trastuzumab deruxtecan',
+    score: 96,
+    status: 'Phase III',
+    evidenceLevel: 'High confidence',
+    summary: 'Antibody-drug conjugate with strong response in HER2-positive metastatic disease.',
+    keyFindings: JSON.stringify(['HER2 amplification', 'Progression-free survival', 'Targeted payload']),
+    tags: JSON.stringify(['precision oncology', 'ADC', 'biomarker'])
+  },
+  {
+    id: 'study-2',
+    cancerType: 'Lung Cancer',
+    stage: 'Advanced',
+    biomarker: 'PD-L1 high',
+    therapy: 'Dual checkpoint inhibition',
+    score: 91,
+    status: 'Phase II',
+    evidenceLevel: 'High confidence',
+    summary: 'Combination immunotherapy improves response in PD-L1-positive non-small cell lung cancer.',
+    keyFindings: JSON.stringify(['Immune activation', 'Checkpoint blockade', 'Tumor response']),
+    tags: JSON.stringify(['immunotherapy', 'PD-L1', 'combination'])
+  },
+  {
+    id: 'study-3',
+    cancerType: 'Prostate Cancer',
+    stage: 'Hormone resistant',
+    biomarker: 'PSA rebound',
+    therapy: 'AR-targeted precision therapy',
+    score: 88,
+    status: 'Phase II',
+    evidenceLevel: 'Moderate confidence',
+    summary: 'Androgen receptor pathway targets show benefit in resistant disease signals.',
+    keyFindings: JSON.stringify(['AR signaling', 'PSA surveillance', 'Resistance reversal']),
+    tags: JSON.stringify(['androgen receptor', 'precision medicine'])
+  },
+  {
+    id: 'study-4',
+    cancerType: 'Glioblastoma',
+    stage: 'Recurrent',
+    biomarker: 'MGMT unmethylated',
+    therapy: 'Tumor vaccine + immune modulation',
+    score: 84,
+    status: 'Phase I/II',
+    evidenceLevel: 'Emerging',
+    summary: 'Immune infiltration signals show promise in recurrent glioblastoma.',
+    keyFindings: JSON.stringify(['Tumor microenvironment', 'Immune infiltration', 'Recurrence control']),
+    tags: JSON.stringify(['brain cancer', 'vaccine', 'immune therapy'])
+  },
+  {
+    id: 'study-5',
+    cancerType: 'Leukemia',
+    stage: 'Relapsed',
+    biomarker: 'FLT3 mutation',
+    therapy: 'FLT3 inhibitor + chemotherapy',
+    score: 90,
+    status: 'Phase III',
+    evidenceLevel: 'High confidence',
+    summary: 'FLT3 mutation targeting shows meaningful benefits in relapse mitigation and remission depth.',
+    keyFindings: JSON.stringify(['Mutation targeting', 'Remission depth', 'Minimal residual disease']),
+    tags: JSON.stringify(['targeted therapy', 'mutation', 'hematology'])
+  }
+];
+
+const seedKnowledge = [
+  {
+    id: 'knowledge-1',
+    title: 'Biomarker-driven matching',
+    details: 'Patients with receptor-positive signatures show increased benefit from targeted therapy combinations.'
+  },
+  {
+    id: 'knowledge-2',
+    title: 'Combination therapy advantage',
+    details: 'Multimodal treatment strategies outperform monotherapy in recurrent and metastatic disease patterns.'
+  },
+  {
+    id: 'knowledge-3',
+    title: 'Liquid biopsy monitoring',
+    details: 'Serial ctDNA measurement reduces time to therapy adjustment in dynamic disease states.'
+  }
+];
+
+const seedRecommendations = [
+  {
+    id: 'rec-1',
+    cancerType: 'Breast Cancer',
+    recommendation: 'Prioritize HER2-positive targeted ADC regimens with biomarker-matched sequencing.',
+    confidence: 95,
+    impact: '+18.6% response lift'
+  },
+  {
+    id: 'rec-2',
+    cancerType: 'Lung Cancer',
+    recommendation: 'Expand dual checkpoint therapy for PD-L1-high subgroups and monitor ctDNA response.',
+    confidence: 91,
+    impact: '+14.9% response lift'
+  },
+  {
+    id: 'rec-3',
+    cancerType: 'Glioblastoma',
+    recommendation: 'Test multi-modal immune modulation with real-time tumor microenvironment tracking.',
+    confidence: 82,
+    impact: '+11.2% survival gain'
+  }
+];
+
+const initDatabase = () => {
+  db.serialize(() => {
+    db.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        passwordHash TEXT NOT NULL,
+        name TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'researcher',
+        createdAt TEXT NOT NULL
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS studies (
+        id TEXT PRIMARY KEY,
+        cancerType TEXT NOT NULL,
+        stage TEXT NOT NULL,
+        biomarker TEXT NOT NULL,
+        therapy TEXT NOT NULL,
+        score INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        evidenceLevel TEXT NOT NULL,
+        summary TEXT NOT NULL,
+        keyFindings TEXT NOT NULL,
+        tags TEXT NOT NULL,
+        createdAt TEXT NOT NULL
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS knowledge (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        details TEXT NOT NULL,
+        createdAt TEXT NOT NULL
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS recommendations (
+        id TEXT PRIMARY KEY,
+        cancerType TEXT NOT NULL,
+        recommendation TEXT NOT NULL,
+        confidence INTEGER NOT NULL,
+        impact TEXT NOT NULL,
+        createdAt TEXT NOT NULL
+      )
+    `);
+
+    db.run(`
+      INSERT OR IGNORE INTO users (id, email, passwordHash, name, role, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [
+      'user-demo',
+      'admin@oncology.research',
+      bcrypt.hashSync('demo123', 10),
+      'Dr. Maya Chen',
+      'admin',
+      new Date().toISOString()
+    ]);
+
+    seedStudies.forEach((study) => {
+      db.run(`
+        INSERT OR IGNORE INTO studies (
+          id, cancerType, stage, biomarker, therapy, score, status, evidenceLevel, summary, keyFindings, tags, createdAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        study.id,
+        study.cancerType,
+        study.stage,
+        study.biomarker,
+        study.therapy,
+        study.score,
+        study.status,
+        study.evidenceLevel,
+        study.summary,
+        study.keyFindings,
+        study.tags,
+        new Date().toISOString()
+      ]);
+    });
+
+    seedKnowledge.forEach((item) => {
+      db.run(`
+        INSERT OR IGNORE INTO knowledge (id, title, details, createdAt)
+        VALUES (?, ?, ?, ?)
+      `, [item.id, item.title, item.details, new Date().toISOString()]);
+    });
+
+    seedRecommendations.forEach((item) => {
+      db.run(`
+        INSERT OR IGNORE INTO recommendations (id, cancerType, recommendation, confidence, impact, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `, [item.id, item.cancerType, item.recommendation, item.confidence, item.impact, new Date().toISOString()]);
+    });
+  });
+};
+
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = payload;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+};
+
+const formatUser = (row) => ({
+  id: row.id,
+  email: row.email,
+  name: row.name,
+  role: row.role,
+  createdAt: row.createdAt,
+});
+
+const formatStudy = (row) => ({
+  id: row.id,
+  cancerType: row.cancerType,
+  stage: row.stage,
+  biomarker: row.biomarker,
+  therapy: row.therapy,
+  score: row.score,
+  status: row.status,
+  evidenceLevel: row.evidenceLevel,
+  summary: row.summary,
+  keyFindings: JSON.parse(row.keyFindings || '[]'),
+  tags: JSON.parse(row.tags || '[]')
+});
+
+const formatKnowledge = (row) => ({
+  id: row.id,
+  title: row.title,
+  details: row.details,
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', service: 'cancer-research-api', database: dbPath });
+});
+
+app.post('/api/auth/register', async (req, res) => {
+  const { email, password, name } = req.body || {};
+
+  if (!email || !password || !name) {
+    return res.status(400).json({ error: 'Email, password, and name are required' });
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const userId = randomUUID();
+
+  db.run(
+    'INSERT INTO users (id, email, passwordHash, name, role, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
+    [userId, email, passwordHash, name, 'researcher', new Date().toISOString()],
+    function insertError(err) {
+      if (err) {
+        return res.status(409).json({ error: 'User already exists' });
+      }
+
+      const token = jwt.sign({ id: userId, email, role: 'researcher', name }, JWT_SECRET, { expiresIn: '7d' });
+      return res.status(201).json({
+        token,
+        user: { id: userId, email, name, role: 'researcher' },
+      });
+    }
+  );
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body || {};
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
+  }
+
+  db.get('SELECT * FROM users WHERE email = ?', [email], async (err, row) => {
+    if (err || !row) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const valid = await bcrypt.compare(password, row.passwordHash);
+    if (!valid) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const token = jwt.sign({ id: row.id, email: row.email, role: row.role, name: row.name }, JWT_SECRET, { expiresIn: '7d' });
+    return res.json({
+      token,
+      user: formatUser(row),
+    });
+  });
+});
+
+app.get('/api/auth/me', authMiddleware, (req, res) => {
+  db.get('SELECT * FROM users WHERE id = ?', [req.user.id], (err, row) => {
+    if (err || !row) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.json({ user: formatUser(row) });
+  });
+});
+
+app.get('/api/dashboard', authMiddleware, (req, res) => {
+  db.all('SELECT * FROM studies ORDER BY score DESC', (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Unable to load dashboard data' });
+    }
+
+    const studies = rows.map(formatStudy);
+    const highPriority = studies.filter((entry) => entry.score >= 90).length;
+    const activeTrials = studies.filter((entry) => entry.status.includes('Phase')).length;
+    const promisingTherapies = studies.slice(0, 3).map((entry) => entry.therapy);
+
+    db.all('SELECT * FROM recommendations ORDER BY confidence DESC', (recErr, recRows) => {
+      if (recErr) {
+        return res.status(500).json({ error: 'Unable to load recommendations' });
+      }
+
+      db.all('SELECT * FROM knowledge ORDER BY createdAt DESC', (knowledgeErr, knowledgeRows) => {
+        if (knowledgeErr) {
+          return res.status(500).json({ error: 'Unable to load knowledge base' });
+        }
+
+        return res.json({
+          summary: {
+            totalStudies: studies.length,
+            highPriority,
+            activeTrials,
+            promisingTherapies,
+          },
+          recommendations: recRows,
+          knowledge: knowledgeRows.map(formatKnowledge),
+          studies,
+        });
+      });
+    });
+  });
+});
+
+app.get('/api/research', (req, res) => {
+  const query = String(req.query.query || '').toLowerCase();
+  const cancer = String(req.query.cancer || 'All');
+
+  db.all('SELECT * FROM studies ORDER BY score DESC', (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Unable to load research data' });
+    }
+
+    const filtered = rows
+      .map(formatStudy)
+      .filter((entry) => {
+        const matchesCancer = cancer === 'All' || entry.cancerType === cancer;
+        const haystack = [
+          entry.cancerType,
+          entry.biomarker,
+          entry.therapy,
+          entry.summary,
+          entry.status,
+          entry.tags.join(' '),
+          entry.keyFindings.join(' '),
+        ].join(' ').toLowerCase();
+
+        return matchesCancer && (!query || haystack.includes(query));
+      });
+
+    const summary = {
+      totalStudies: filtered.length,
+      highPriority: filtered.filter((entry) => entry.score >= 90).length,
+      activeTrials: filtered.filter((entry) => entry.status.includes('Phase')).length,
+      promisingTherapies: filtered.slice(0, 3).map((entry) => entry.therapy),
+    };
+
+    return res.json({ data: filtered, summary });
+  });
+});
+
+app.get('/api/recommendations', (req, res) => {
+  db.all('SELECT * FROM recommendations ORDER BY confidence DESC', (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Unable to load recommendations' });
+    }
+
+    return res.json({ recommendations: rows });
+  });
+});
+
+app.get('/api/studies', (req, res) => {
+  db.all('SELECT * FROM studies ORDER BY score DESC', (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Unable to load studies' });
+    }
+
+    return res.json({ studies: rows.map(formatStudy) });
+  });
+});
+
+app.post('/api/studies', authMiddleware, (req, res) => {
+  const { cancerType, stage, biomarker, therapy, score, status, evidenceLevel, summary, keyFindings, tags } = req.body || {};
+
+  if (!cancerType || !biomarker || !therapy || !summary) {
+    return res.status(400).json({ error: 'Required fields missing' });
+  }
+
+  const studyId = `study-${randomUUID()}`;
+  db.run(
+    `INSERT INTO studies (id, cancerType, stage, biomarker, therapy, score, status, evidenceLevel, summary, keyFindings, tags, createdAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      studyId,
+      cancerType,
+      stage || 'Unknown',
+      biomarker,
+      therapy,
+      Number(score || 80),
+      status || 'New',
+      evidenceLevel || 'Emerging',
+      summary,
+      JSON.stringify(keyFindings || []),
+      JSON.stringify(tags || []),
+      new Date().toISOString(),
+    ],
+    function insertStudy(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Unable to create study entry' });
+      }
+
+      return res.status(201).json({ message: 'Study created', id: studyId });
+    }
+  );
+});
+
+app.get('/api/knowledge', (req, res) => {
+  db.all('SELECT * FROM knowledge ORDER BY createdAt DESC', (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Unable to load knowledge base' });
+    }
+
+    return res.json({ knowledge: rows.map(formatKnowledge) });
+  });
+});
+
+app.listen(PORT, () => {
+  initDatabase();
+  console.log(`Cancer research API listening on http://localhost:${PORT}`);
+});
