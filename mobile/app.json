@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "Cancer Research App",
+    "slug": "cancer-research-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  }
+}

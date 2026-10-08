@@ -1,42 +1,81 @@
 # Cancer Cure Research App
 
-An AI-assisted oncology research dashboard built with Next.js and a full-stack API layer for cancer research intelligence.
+A full-stack oncology research platform powering discovery workflows for cancer treatment exploration, biomarker analysis, study tracking, and AI-guided recommendations.
 
-## Features
+## Included in this repo
 
-- Research dashboard for multiple cancer types
-- Search and filtering by cancer, biomarker, therapy, and keyword
-- AI-style recommendation engine for promising treatment pathways
-- Knowledge base summaries for clinical research insights
-- Clean, modern research UI
-- API-backed data layer using mock oncology research data
+- Next.js web dashboard for cancer research operations
+- Express backend API for research insights and recommendations
+- React Native mobile app for clinicians and researchers on the go
+- Search and filtering by cancer type, biomarker, therapy, and keyword
+- AI-style recommendation engine for treatment prioritization
+- Study tracking and research pipeline view
+- Knowledge base with curated oncology insights
+- Demo data modeled around real research workflows
 
-## Tech stack
+## Repository structure
 
-- Next.js 14
-- React 18
-- TypeScript
-- App Router API routes
+- `app/` — Next.js frontend dashboard
+- `app/api/research/route.ts` — API route for filtered research records
+- `data/research.ts` — oncology dataset for the dashboard
+- `server/` — Express backend with treatment, study, and recommendation endpoints
+- `mobile/` — Expo React Native app for mobile access
+- `README.md` — project overview and run instructions
 
-## Getting started
+## Web app quick start
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-2. Start the development server:
-   ```bash
-   npm run dev
-   ```
-3. Open http://localhost:3000
+```bash
+npm install
+npm run dev
+```
 
-## Project structure
+Then open:
 
-- `app/page.tsx` — main dashboard UI
-- `app/api/research/route.ts` — API endpoint returning filtered research records
-- `data/research.ts` — oncology research demo dataset
-- `app/globals.css` — dashboard styling
+```text
+http://localhost:3000
+```
+
+## Backend quick start
+
+```bash
+cd server
+npm install
+npm run dev
+```
+
+The API will run on:
+
+```text
+http://localhost:4000
+```
+
+Endpoints include:
+
+- `GET /api/health`
+- `GET /api/research`
+- `GET /api/recommendations`
+- `GET /api/studies`
+- `GET /api/knowledge`
+
+## Mobile app quick start
+
+```bash
+cd mobile
+npm install
+npm start
+```
+
+Then run the app in the simulator or on a device using Expo Go.
+
+## Product vision
+
+This app is designed as a research-oriented clinical intelligence platform for:
+
+- identifying promising cancer therapies
+- reviewing biomarker-driven trial opportunities
+- prioritizing interventions by evidence and risk profile
+- supporting researchers and clinicians through a streamlined dashboard
 
 ## Notes
 
-This is a working MVP designed for research workflow prototyping. The data is demo content and can be replaced with a real clinical data source or ML-powered backend later.
+The current version uses realistic demo data for prototyping and can be extended to real clinical datasets, a database layer, authentication, or machine learning inference in a production environment.
