@@ -1,0 +1,92 @@
+export const researchEntries = [
+  {
+    id: 1,
+    cancerType: "Breast Cancer",
+    stage: "Metastatic",
+    biomarker: "HER2-positive",
+    therapy: "Trastuzumab deruxtecan",
+    score: 96,
+    status: "Phase III",
+    evidenceLevel: "High confidence",
+    summary:
+      "Novel antibody-drug conjugate demonstrates sustained response in HER2-positive metastatic disease with manageable safety profile.",
+    keyFindings: ["HER2 amplification", "Progression-free survival", "Targeted payload"],
+    tags: ["precision oncology", "ADC", "biomarker"],
+  },
+  {
+    id: 2,
+    cancerType: "Lung Cancer",
+    stage: "Advanced",
+    biomarker: "PD-L1 high",
+    therapy: "Dual checkpoint inhibition",
+    score: 91,
+    status: "Phase II",
+    evidenceLevel: "High confidence",
+    summary:
+      "Combination immunotherapy shows improved response rates in PD-L1 positive non-small cell lung cancer subgroups.",
+    keyFindings: ["Immune activation", "Checkpoint blockade", "Tumor response"],
+    tags: ["immunotherapy", "PD-L1", "combination"],
+  },
+  {
+    id: 3,
+    cancerType: "Prostate Cancer",
+    stage: "Hormone resistant",
+    biomarker: "PSA rebound",
+    therapy: "AR-targeted precision therapy",
+    score: 88,
+    status: "Phase II",
+    evidenceLevel: "Moderate confidence",
+    summary:
+      "AR pathway inhibitors show benefit in progressing patients with biomarker shifts suggesting resistance reversion potential.",
+    keyFindings: ["AR signaling", "PSA surveillance", "Resistance reversal"],
+    tags: ["androgen receptor", "precision medicine"],
+  },
+  {
+    id: 4,
+    cancerType: "Glioblastoma",
+    stage: "Recurrent",
+    biomarker: "MGMT unmethylated",
+    therapy: "Tumor vaccine + immune modulation",
+    score: 84,
+    status: "Phase I/II",
+    evidenceLevel: "Emerging",
+    summary:
+      "Vaccination strategies paired with immunomodulatory therapy signal improved immune infiltration in recurrent glioblastoma.",
+    keyFindings: ["Tumor microenvironment", "Immune infiltration", "Recurrence control"],
+    tags: ["brain cancer", "vaccine", "immune therapy"],
+  },
+  {
+    id: 5,
+    cancerType: "Leukemia",
+    stage: "Relapsed",
+    biomarker: "FLT3 mutation",
+    therapy: "FLT3 inhibitor + chemotherapy",
+    score: 90,
+    status: "Phase III",
+    evidenceLevel: "High confidence",
+    summary:
+      "FLT3-mutated leukemia requires combined targeting to suppress clonal resilience and improve induction outcomes.",
+    keyFindings: ["Mutation targeting", "Remission depth", "Minimal residual disease"],
+    tags: ["targeted therapy", "mutation", "hematology"],
+  },
+  {
+    id: 6,
+    cancerType: "Melanoma",
+    stage: "Advanced",
+    biomarker: "BRAF V600E",
+    therapy: "BRAF/MEK inhibition",
+    score: 93,
+    status: "Phase II",
+    evidenceLevel: "High confidence",
+    summary:
+      "MAPK pathway blockade continues to produce durable disease control with improved progression-free survival in BRAF-mutated melanoma.",
+    keyFindings: ["BRAF mutation", "MAPK targeting", "Clinical response"],
+    tags: ["targeted therapy", "oncogenic signaling", "mutation"],
+  },
+];
+
+export const knowledgeEntries = [
+  { title: "Biomarker-driven matching", details: "Patients with receptor-positive signatures show increased benefit from targeted therapy combinations." },
+  { title: "Combination therapy advantage", details: "Multimodal treatment strategies outperform monotherapy in recurrent and metastatic disease patterns." },
+  { title: "Liquid biopsy monitoring", details: "Serial circulating tumor DNA measurement reduces time to therapy adjustment in dynamic disease states." },
+];
